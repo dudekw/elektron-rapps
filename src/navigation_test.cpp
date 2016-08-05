@@ -18,21 +18,17 @@ int main(int argc, char ** argv){
 	nav.move_joint(joint_names, joint_angles);
 
 	rapp::object::pose_stamped pose_start;
-	rapp::object::pose_stamped pose_mid;
-	rapp::object::pose_stamped pose_goal;
+	 // pose_mid;
 	std::vector<rapp::object::pose_stamped> poses_list;
 	poses_list.clear();
 	// push the start pose for moveAlongPath method
 	poses_list.push_back(pose_start);
 	// determine mid pose for moveAlongPath method
-	pose_mid.header.frame_id = "/map"; 
-	pose_mid.pose.position.x = 1;
-	pose_mid.pose.position.y = 1;
+	rapp::object::pose_stamped pose_mid(rapp::object::header(0,rapp::object::time(0,0),"/map"), rapp::object::pose(rapp::object::point(1,1,0),rapp::object::quaternion(0,0,0,1))); 
 	poses_list.push_back(pose_mid);
 	// determine goal pose for moveAlongPath method
-	pose_goal.header.frame_id = "/map"; 
-	pose_goal.pose.position.x = 2;
-	pose_goal.pose.position.y = 0;
+	rapp::object::pose_stamped pose_goal(rapp::object::header(0,rapp::object::time(0,0),"/map"), rapp::object::pose(rapp::object::point(2,0,0),rapp::object::quaternion(0,0,0,1))); 
+
 	poses_list.push_back(pose_goal);
 	// move robot via combined path
 	nav.move_along_path(poses_list);
