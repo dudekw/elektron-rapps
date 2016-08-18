@@ -21,9 +21,9 @@ int globalLocalization(std::string *QRmap_path){
 	rapp::object::qr_code_3d detected_qrcodes;
 
 
-	rapp::object::picture::Ptr picture_ptr  = rapp_vision.capture_image (0, 3 , "png");
-	//picture_ptr->save("/home/nao/pictureTest.png");
-
+	rapp::object::picture::Ptr picture_ptr  = rapp_vision.capture_image (0, 3, ".png");
+	picture_ptr->save("/home/robot/pictureTest.png");
+	std::cout<<"after CAPTURE"<<std::endl;
 	std::vector<std::vector<float>> robotToCameraMatrix = rapp_navigation.get_transform("rgb_head_1",0);
 
 	double camera_top_matrix[3][3];
@@ -51,11 +51,16 @@ int globalLocalization(std::string *QRmap_path){
 	rapp_communication.text_to_speech("QRcodes");
 
 	if (detected_qrcodes.number_of_qr_codes > 0){
+        std::cout<<"Found QR_code label: |"<< detected_qrcodes.qr_message.at(0)<<"|"<<std::endl;
+
+        std::cout<<"QR_map_path: |"<<QRmap_path<<"|"<<std::endl;
 		map = rapp_localization.load_qr_code_map(QRmap_path);
 
 		std::string label = map.labels.at(0);
+        std::cout<<"label[0]: |"<<label<<"|"<<std::endl;
 		
 		new_pose = rapp_localization.qr_code_localization(detected_qrcodes,robotToCameraMatrix, map);
+        std::cout<<"pose_x: |"<<new_pose.position.x<<"|"<<std::endl;
 
 		bool setPose_status = rapp_navigation.set_global_pose(new_pose);
 		std::cout << setPose_status<<std::endl;
@@ -114,7 +119,7 @@ int main (int argc, char ** argv ) {
 	move_joints_names.clear();
 	move_joints_names.push_back("head_yaw");
 	std::vector<float> new_joint_angle;
-	rapp_navigation.take_predefined_posture("Stand", 0.5);
+	rapp_navigation.take_predefined_posture("Zero", 0.5);
 	// global localization with Nao head motion
 	std::cout<<"setting head start position"<< std::endl;
 	new_joint_angle.clear();
@@ -137,6 +142,7 @@ int main (int argc, char ** argv ) {
 			std::cout<<"localization successful"<<std::endl;
 		} else if(localization_status == 2){
 			bool moveJoint_status = rapp_navigation.move_joint(move_joints_names, new_joint_angle, 0.5);
+			sleep(4);
 			if (moveJoint_status)
 				localization_status = 1;
 
