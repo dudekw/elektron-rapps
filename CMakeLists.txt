@@ -5,13 +5,18 @@ project(elektron_rapps)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED)
+find_package(Boost COMPONENTS system REQUIRED)
 find_package(RappRobots REQUIRED)
+
 include_directories(${RAPP_ROBOTS_INCLUDE_DIRS})
 LINK_DIRECTORIES(${RAPP_ROBOTS_LIBRARY_DIRS})
 
 find_package(Rapp REQUIRED)
 MESSAGE(STATUS ${RAPP_INCLUDE_DIRS})
 include_directories(${RAPP_INCLUDE_DIRS})
+include_directories(${RAPP_INCLUDE_DIRS}/rapp)
+include_directories(${Boost_INCLUDE_DIR})
+
 LINK_DIRECTORIES(${RAPP_LIBRARY_DIRS})
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -184,14 +189,24 @@ catkin_package(
 
 ## Declare a C++ executable
  add_executable(elektron_nav_test src/navigation_test.cpp)
+ add_executable(elektron_hazard src/hazard_detection.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
- add_dependencies(elektron_nav_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(elektron_nav_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(elektron_hazard ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(elektron_nav_test
 rapp_robot_navigation
+ )
+  target_link_libraries(elektron_hazard
+${Boost_LIBRARIES}
+rapp_robot_navigation
+rapp_robot_localization
+rapp_robot_vision
+rapp_robot_communication
+
  )
 
 #############
@@ -214,7 +229,11 @@ rapp_robot_navigation
    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
-
+ install(TARGETS elektron_hazard
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ )
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
 #   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
