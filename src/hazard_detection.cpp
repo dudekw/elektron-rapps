@@ -1,12 +1,18 @@
+#include <cloud/navigation/path_planning/path_planning.hpp>
+
 #include <rapp-robots-api/navigation/navigation.hpp>
 #include <rapp-robots-api/localization/localization.hpp>
 #include <rapp-robots-api/vision/vision.hpp>
 #include <rapp-robots-api/communication/communication.hpp>
 #include <cloud/vision/hazard_detection/hazard_detection.hpp>
+#include <rapp/cloud/service_controller/service_controller.hpp>
+#include <rapp/cloud/asio/asio_http/asio_http.hpp>
+
 #include <sstream>
 #include <cstdio>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <chrono>
 
 rapp::robot::localization rapp_localization;
 rapp::robot::vision rapp_vision;
@@ -27,10 +33,10 @@ int globalLocalization(std::string *QRmap_path){
 	std::vector<std::vector<float>> robotToCameraMatrix = rapp_navigation.get_transform("rgb_head_1",0);
 
 	double camera_top_matrix[3][3];
-	camera_top_matrix[0][0] = 182.0992346 / 0.16;
-		camera_top_matrix[0][2] = 658.7582;
-		camera_top_matrix[1][1] = 185.0952141 / 0.16;
-		camera_top_matrix[1][2] = 484.2186;
+	camera_top_matrix[0][0] = 1776.709300;
+		camera_top_matrix[0][2] = 665.442605;
+		camera_top_matrix[1][1] = 1790.305076;
+		camera_top_matrix[1][2] = 420.572422;
 		camera_top_matrix[2][2] = 1.0;
 		camera_top_matrix[0][1] = 0.0;
 		camera_top_matrix[1][0] = 0.0;
@@ -64,7 +70,7 @@ int globalLocalization(std::string *QRmap_path){
 
 		bool setPose_status = rapp_navigation.set_global_pose(new_pose);
 		std::cout << setPose_status<<std::endl;
-		if (setPose_status){
+		if (!setPose_status){
 			status = 0;
 		}else{
 			if(!mute)
@@ -88,6 +94,59 @@ int globalLocalization(std::string *QRmap_path){
 bool check_file (const std::string& name) {
 	struct stat buffer;   
 	return (stat (name.c_str(), &buffer) == 0); 
+}
+rapp::object::planned_path cloudPlanPath(rapp::cloud::service_controller &ctrl, rapp::object::pose_stamped  current_pose, rapp::object::pose_stamped  goal_pose_rapp, std::string map_name){
+
+rapp::object::planned_path ret;
+
+	auto callback = [&](rapp::object::planned_path path)
+    {
+        if (path.plan_found) {
+            for(const auto & p : path.path) {
+                std::cout << "[" << p.pose.position.x << ", " << p.pose.position.y << "]" << std::endl;
+            }
+            ret = path;
+        } else {
+            std::cout << "Path not found\n";
+        }
+    };
+
+    ctrl.make_call<rapp::cloud::plan_path_2d>(map_name, "NAO", "dijkstra", current_pose, goal_pose_rapp, callback);
+return ret;
+}
+
+void uploadMap(rapp::cloud::service_controller &ctrl,std::string map_path, std::string map_name){
+
+
+    // callback lambda UPLOAD MAP
+    auto upload_callback = [&](std::string status)
+    {std::cout << "upload status: \n" << status << " \n" << std::endl;};
+    // upload map
+    std::string yaml_file_name  = map_path + "/" + map_name + ".yaml";
+    std::string png_file_name  = map_path + "/" + map_name + ".png";
+    std::cout<<"yaml: " << yaml_file_name<<std::endl;
+    std::cout<<"png: " << png_file_name<<std::endl;
+    std::cout<<"map_name: "<<map_name<<std::endl;
+    auto yaml_file = rapp::object::yaml(yaml_file_name);
+    auto picture_file = rapp::object::picture(png_file_name);
+
+    ///
+    ctrl.make_call<rapp::cloud::path_upload_map>(picture_file, yaml_file, map_name, upload_callback);
+
+}
+
+void printPose(rapp::object::pose_stamped  pose){
+
+std::cout<< "POSE:" <<std::endl;
+std::cout<< "  x: " << pose.pose.position.x <<std::endl;
+std::cout<< "  y: " << pose.pose.position.y <<std::endl;
+std::cout<< "  z: " << pose.pose.position.z <<std::endl;
+
+std::cout<< "  ox: " << pose.pose.orientation.x <<std::endl;
+std::cout<< "  oy: " << pose.pose.orientation.y <<std::endl;
+std::cout<< "  oz: " << pose.pose.orientation.z <<std::endl;
+std::cout<< "  ow: " << pose.pose.orientation.w <<std::endl;
+
 }
 
 int main (int argc, char ** argv ) {
@@ -159,13 +218,13 @@ int main (int argc, char ** argv ) {
 		}
 
 	}
-
 	// ----
 	// get robot position
 	rapp::object::pose_stamped current_pose = rapp_navigation.get_global_pose();
 	// ----
 	//compose hazard pose and hazard point 
 	rapp::object::pose goal_pose_rapp;
+
 	std::vector<float> goal_pose_input;
 	float x;
 	goal_pose_input.clear();
@@ -173,6 +232,8 @@ int main (int argc, char ** argv ) {
 	std::istringstream ss1(argv[i]);
 	ss1 >> x;
 	goal_pose_input.push_back(x);
+	std::cout<<"goal pose ["<<i<<"]"<<": "<<x<<std::endl;
+
 	}
 	for (int i=8; i<=10 ; i++){
 	std::istringstream ss2(argv[i]);
@@ -187,31 +248,53 @@ int main (int argc, char ** argv ) {
 	goal_pose_rapp.orientation.y = goal_pose_input.at(4);
 	goal_pose_rapp.orientation.z = goal_pose_input.at(5);
 	goal_pose_rapp.orientation.w = goal_pose_input.at(6);
+
 	// hazard point
 	float hazard_point_x = goal_pose_input.at(7);
 	float hazard_point_y = goal_pose_input.at(8);
 	float hazard_point_z = goal_pose_input.at(9);
+
+	auto nsec = std::chrono::nanoseconds(10);		  	
+
+
+	//std::chrono::miliseconds ms(10);
+	rapp::object::msg_metadata goal_meta(0, nsec, "world" );
+
+	rapp::object::pose_stamped goal_pose_rapp_stamp(goal_meta,goal_pose_rapp);
+
 	// ----
+
+	// CLOUD
+
+	// ----
+	std::cout<<"CURRENT POSE:"<<std::endl;
+	printPose(current_pose);
+	std::cout<<"GOAL POSE:"<<std::endl;
+
+	printPose(goal_pose_rapp_stamp);
+	// service controler
+	std::string token = argv[15];
+
+    rapp::cloud::platform_info info = {"192.168.18.180", "9001", token}; 
+    rapp::cloud::service_controller ctrl(info);
+
+	// upload map
+    std::string ObsMap_path(argv[13]);
+    std::string ObsMap_name(argv[14]);
+	uploadMap(ctrl,ObsMap_path,ObsMap_name);
+
 	// plann path
 	rapp::object::planned_path planner_response;
-	// planner_response = rapp_dynamic_navigation.plannPath2d(........ , current_pose.pose,goal_pose_rapp); 
-	// 
-	//
 
-	// handle failed planning
-
-	// ----
+	planner_response = cloudPlanPath(ctrl,current_pose,goal_pose_rapp_stamp, ObsMap_name);
 
 
 	// move along path
-	//bool move_along_status = rapp_navigation.moveAlongPath(planner_response.path);
+	bool move_along_status = rapp_navigation.move_along_path(planner_response.path);
 
 	// handle failed moveAlongPath
 
 	// ----
-	goal_pose_rapp.position.x = goal_pose_input.at(0);
-	goal_pose_rapp.position.y = goal_pose_input.at(1);
-	goal_pose_rapp.position.z = goal_pose_input.at(2);
 	//rapp_navigation.rest("Crouch");
 
 	bool look_at_point_status = rapp_navigation.look_at_point(hazard_point_x, hazard_point_y, hazard_point_z);
@@ -250,7 +333,7 @@ int main (int argc, char ** argv ) {
 	rapp_communication.text_to_speech("I need to rest now");
 	//  
 	//
-	rapp_navigation.rest("Crouch");
+	//rapp_navigation.rest("Crouch");
 	return 0;
 }
 
