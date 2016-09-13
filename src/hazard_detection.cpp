@@ -148,29 +148,48 @@ std::cout<< "  oz: " << pose.pose.orientation.z <<std::endl;
 std::cout<< "  ow: " << pose.pose.orientation.w <<std::endl;
 
 }
+bool plannAndMove(std::vector<float> goal_pose_input, std::string token, rapp::object::pose goal_pose_rapp, rapp::object::pose_stamped current_pose, std::string ObsMap_path, std::string ObsMap_name){
 
-int main (int argc, char ** argv ) {
+	auto nsec = std::chrono::nanoseconds(10);		  	
 
-	if (argc<14){
 
-	std::cout<<"Too less arguments. Arguments are: "<<std::endl;
-	std::cout<<" x, y, z, ox, oy, oz, ow,         X, Y, Z,          mute,     map_file_path,  token"<<std::endl;
-	std::cout<<"|hazard detection pose  | hazard detection point|mute speech| path to QR map| API token |"<<std::endl;
-	return 0;	
-	}
-	std::string qr_map_file_path=argv[12];
-	if (!check_file(qr_map_file_path)){
-	std::cout<<"Map file not found: "<<argv[12]<<std::endl;	
-	return 0;		
-	}
-	int mute_trigger;
-	std::istringstream ss_mute_trigger(argv[11]);
-	ss_mute_trigger >> mute_trigger;
-	if(mute_trigger==1){
-		mute = true;
-	}else{
-		mute=false;
-	}
+	//std::chrono::miliseconds ms(10);
+	rapp::object::msg_metadata goal_meta(0, nsec, "world" );
+
+	rapp::object::pose_stamped goal_pose_rapp_stamp(goal_meta,goal_pose_rapp);
+
+	// ----
+
+	// CLOUD
+
+	// ----
+	std::cout<<"CURRENT POSE:"<<std::endl;
+	printPose(current_pose);
+	std::cout<<"GOAL POSE:"<<std::endl;
+
+	printPose(goal_pose_rapp_stamp);
+	// service controler
+
+    rapp::cloud::platform_info info = {"192.168.18.180", "9001", token}; 
+    rapp::cloud::service_controller ctrl(info);
+
+	// upload map
+    // std::string ObsMap_path(argv[13]);
+    // std::string ObsMap_name(argv[14]);
+	uploadMap(ctrl,ObsMap_path,ObsMap_name);
+
+	// plann path
+	rapp::object::planned_path planner_response;
+
+	planner_response = cloudPlanPath(ctrl,current_pose,goal_pose_rapp_stamp, ObsMap_name);
+
+
+	// move along path
+	bool move_along_status = rapp_navigation.move_along_path(planner_response.path);
+
+}
+bool handleGlobalLocalization(std::string qr_map_file_path){
+
 	int localization_status = 2;
 	bool camera_joint_range = false;
 	std::vector<std::string> move_joints_names;
@@ -218,10 +237,105 @@ int main (int argc, char ** argv ) {
 		}
 
 	}
+
+
+}
+
+bool handleHazard(std::string token, float hazard_point_x, float hazard_point_y, float hazard_point_z, int hazard_ID){
+	// handle failed moveAlongPath
+
 	// ----
-	// get robot position
-	rapp::object::pose_stamped current_pose = rapp_navigation.get_global_pose();
+	//rapp_navigation.rest("Crouch");
+
+	bool look_at_point_status = rapp_navigation.look_at_point(hazard_point_x, hazard_point_y, hazard_point_z);
+	std::cout<<"look at point status: "<< look_at_point_status<<std::endl;
+	// handle failed lookAtPoint
+
 	// ----
+
+
+
+
+	// call detect hazard method
+	//
+	//
+	//
+	//    bool door_status = checkDoor();
+	//
+	//
+	rapp::cloud::platform_info info = {"192.168.18.180", "9001", token}; 
+    rapp::cloud::service_controller ctrl(info);
+    if (hazard_ID == 1){
+    	if(!mute)
+		rapp_communication.text_to_speech("I'm checking the door status now.");
+		sleep(5);
+		rapp::object::picture::Ptr door_picture_ptr  = rapp_vision.capture_image (0, 3 , "png");
+		door_picture_ptr->save("./Door_picture.png");
+
+		auto callback = [&](double angle) { std::cout << "Door angle " << angle << std::endl;
+		if (angle > 0){
+		rapp_communication.text_to_speech("The door is opened.");
+		sleep(5);
+		}else {
+		rapp_communication.text_to_speech("The door is closed.");
+		sleep(5);
+		}
+		 };
+		rapp::object::picture door_picture = *door_picture_ptr;
+		ctrl.make_call<rapp::cloud::hazard_detection_door_check>(door_picture, callback);
+
+	}else if(hazard_ID == 2){
+    	if(!mute)
+		rapp_communication.text_to_speech("I'm checking the lamp status now.");
+		sleep(5);
+		rapp::object::picture::Ptr lamp_picture_ptr  = rapp_vision.capture_image (0, 3 , "png");
+		lamp_picture_ptr->save("./Lamp_picture.png");
+		auto callback = [&](double light_level) { std::cout << "lamp status: " << light_level << std::endl; 
+
+		if (light_level > 0){
+		rapp_communication.text_to_speech("The lamp is switched on.");
+		sleep(5);
+		}else {
+		rapp_communication.text_to_speech("The lamp is switched off.");
+		sleep(5);
+		}
+
+		};
+		rapp::object::picture lamp_picture = *lamp_picture_ptr;
+		ctrl.make_call<rapp::cloud::hazard_detection_light_check>(lamp_picture, callback);
+	}
+
+
+/*	//
+	// say sth
+*/
+}
+
+
+
+int main (int argc, char ** argv ) {
+
+	if (argc<14){
+
+	std::cout<<"Too less arguments. Arguments are: "<<std::endl;
+	std::cout<<" x, y, z, ox, oy, oz, ow,         X, Y, Z,          mute,     map_file_path,  token"<<std::endl;
+	std::cout<<"|hazard detection pose  | hazard detection point|mute speech| path to QR map| API token |"<<std::endl;
+	return 0;	
+	}
+	std::string qr_map_file_path=argv[12];
+	if (!check_file(qr_map_file_path)){
+	std::cout<<"Map file not found: "<<argv[12]<<std::endl;	
+	return 0;		
+	}
+	int mute_trigger;
+	std::istringstream ss_mute_trigger(argv[11]);
+	ss_mute_trigger >> mute_trigger;
+	if(mute_trigger==1){
+		mute = true;
+	}else{
+		mute=false;
+	}
+
 	//compose hazard pose and hazard point 
 	rapp::object::pose goal_pose_rapp;
 
@@ -240,6 +354,11 @@ int main (int argc, char ** argv ) {
 	ss2 >> x;
 	goal_pose_input.push_back(x);
 	}
+	// ----
+	// get robot position
+	rapp::object::pose_stamped current_pose = rapp_navigation.get_global_pose();
+	// ----
+
 	// hazard pose
 	goal_pose_rapp.position.x = goal_pose_input.at(0);
 	goal_pose_rapp.position.y = goal_pose_input.at(1);
@@ -250,87 +369,48 @@ int main (int argc, char ** argv ) {
 	goal_pose_rapp.orientation.w = goal_pose_input.at(6);
 
 	// hazard point
-	float hazard_point_x = goal_pose_input.at(7);
-	float hazard_point_y = goal_pose_input.at(8);
-	float hazard_point_z = goal_pose_input.at(9);
+//	float hazard_point_x = goal_pose_input.at(7);
+//	float hazard_point_y = goal_pose_input.at(8);
+//	float hazard_point_z = goal_pose_input.at(9);
 
-	auto nsec = std::chrono::nanoseconds(10);		  	
+	float door_point_x = 6;
+	float door_point_y = 1.7;
+	float door_point_z = 0;
 
 
-	//std::chrono::miliseconds ms(10);
-	rapp::object::msg_metadata goal_meta(0, nsec, "world" );
+	/*
+	float lamp_point_x = 2;
+	float lamp_point_y = 2;
+	float lamp_point_z = 2.5;
+	*/
+	float lamp_point_x = goal_pose_input.at(7);
+	float lamp_point_y = goal_pose_input.at(8);
+	float lamp_point_z = goal_pose_input.at(9);
 
-	rapp::object::pose_stamped goal_pose_rapp_stamp(goal_meta,goal_pose_rapp);
-
-	// ----
-
-	// CLOUD
-
-	// ----
-	std::cout<<"CURRENT POSE:"<<std::endl;
-	printPose(current_pose);
-	std::cout<<"GOAL POSE:"<<std::endl;
-
-	printPose(goal_pose_rapp_stamp);
-	// service controler
 	std::string token = argv[15];
 
-    rapp::cloud::platform_info info = {"192.168.18.180", "9001", token}; 
-    rapp::cloud::service_controller ctrl(info);
-
-	// upload map
     std::string ObsMap_path(argv[13]);
     std::string ObsMap_name(argv[14]);
-	uploadMap(ctrl,ObsMap_path,ObsMap_name);
 
-	// plann path
-	rapp::object::planned_path planner_response;
+	// Start RApp FSM
 
-	planner_response = cloudPlanPath(ctrl,current_pose,goal_pose_rapp_stamp, ObsMap_name);
+	// 1. Global localization
 
+	handleGlobalLocalization(qr_map_file_path);
 
-	// move along path
-	bool move_along_status = rapp_navigation.move_along_path(planner_response.path);
+	// 2. move to door check
+	plannAndMove(goal_pose_input, token, goal_pose_rapp, current_pose, ObsMap_path, ObsMap_name);
 
-	// handle failed moveAlongPath
+	// 3. check the door status
+	handleHazard(token, door_point_x, door_point_y, door_point_z, 1);
 
-	// ----
-	//rapp_navigation.rest("Crouch");
+	// 4. check the lamp status
+	handleHazard(token, lamp_point_x, lamp_point_y, lamp_point_z, 2);
 
-	bool look_at_point_status = rapp_navigation.look_at_point(hazard_point_x, hazard_point_y, hazard_point_z);
-	std::cout<<"look at point status: "<< look_at_point_status<<std::endl;
-	// handle failed lookAtPoint
-
-	// ----
-
+	// if(!mute)
+	// rapp_communication.text_to_speech("The front door is opened");
 	if(!mute)
-	rapp_communication.text_to_speech("I'm checking the door status now.");
-	sleep(5);
-
-/*
-	// call detect hazard method
-	//
-	//
-	//
-	//    bool door_status = checkDoor();
-	//
-	//
-	std::string token = argv[13];
-	rapp::object::picture::Ptr door_picture_ptr  = rapp_vision.capture_image (0, 3 , "png");
-	rapp::cloud::service_controller ctrl;
-	auto callback = [&](double angle) { std::cout << "Door angle " << angle << std::endl; };
-	auto door_check = std::make_shared<rapp::cloud::hazard_detection_door_check>(door_picture_ptr, calback, token);
-	if (door_check) {
-		ctrl.run_job(door_check);
-	}
-	//
-	// say sth
-*/
-
-	if(!mute)
-	rapp_communication.text_to_speech("The front door is opened");
-	if(!mute)
-	rapp_communication.text_to_speech("I need to rest now");
+		rapp_communication.text_to_speech("My job is done.");
 	//  
 	//
 	//rapp_navigation.rest("Crouch");
