@@ -338,6 +338,7 @@ int main (int argc, char ** argv ) {
 
 	//compose hazard pose and hazard point 
 	rapp::object::pose goal_pose_rapp;
+	rapp::object::pose goal_pose_rapp_lamp;
 
 	std::vector<float> goal_pose_input;
 	float x;
@@ -356,10 +357,10 @@ int main (int argc, char ** argv ) {
 	}
 	// ----
 	// get robot position
-	rapp::object::pose_stamped current_pose = rapp_navigation.get_global_pose();
+	//rapp::object::pose_stamped current_pose = rapp_navigation.get_global_pose();
 	// ----
 
-	// hazard pose
+	// hazard-door pose
 	goal_pose_rapp.position.x = goal_pose_input.at(0);
 	goal_pose_rapp.position.y = goal_pose_input.at(1);
 	goal_pose_rapp.position.z = goal_pose_input.at(2);
@@ -367,6 +368,15 @@ int main (int argc, char ** argv ) {
 	goal_pose_rapp.orientation.y = goal_pose_input.at(4);
 	goal_pose_rapp.orientation.z = goal_pose_input.at(5);
 	goal_pose_rapp.orientation.w = goal_pose_input.at(6);
+
+        // hazard-lamp pose
+        goal_pose_rapp_lamp.position.x = 5.5;//goal_pose_input.at(0);
+        goal_pose_rapp_lamp.position.y = 2;//goal_pose_input.at(1);
+        goal_pose_rapp_lamp.position.z = 0;//goal_pose_input.at(2);
+        goal_pose_rapp_lamp.orientation.x = 0;//goal_pose_input.at(3);
+        goal_pose_rapp_lamp.orientation.y = 0;//goal_pose_input.at(4);
+        goal_pose_rapp_lamp.orientation.z = 1;//goal_pose_input.at(5);
+        goal_pose_rapp_lamp.orientation.w = 0.001;//goal_pose_input.at(6);
 
 	// hazard point
 //	float hazard_point_x = goal_pose_input.at(7);
@@ -397,14 +407,28 @@ int main (int argc, char ** argv ) {
 	// 1. Global localization
 
 	handleGlobalLocalization(qr_map_file_path);
+ 	// get robot position
+        rapp::object::pose_stamped current_pose = rapp_navigation.get_global_pose();
+        // ----
 
 	// 2. move to door check
 	plannAndMove(goal_pose_input, token, goal_pose_rapp, current_pose, ObsMap_path, ObsMap_name);
 
+	// 1. Global localization
+
+        //handleGlobalLocalization(qr_map_file_path);
+
 	// 3. check the door status
 	handleHazard(token, door_point_x, door_point_y, door_point_z, 1);
 
-	// 4. check the lamp status
+
+ 	// get robot position
+        current_pose = rapp_navigation.get_global_pose();
+        // ----
+	// 4. move to lamp check
+	plannAndMove(goal_pose_input, token, goal_pose_rapp_lamp, current_pose, ObsMap_path, ObsMap_name);
+
+	// 5. check the lamp status
 	handleHazard(token, lamp_point_x, lamp_point_y, lamp_point_z, 2);
 
 	// if(!mute)
