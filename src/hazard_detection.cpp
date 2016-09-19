@@ -28,7 +28,7 @@ int globalLocalization(std::string *QRmap_path){
 
 
 	rapp::object::picture::Ptr picture_ptr  = rapp_vision.capture_image (0, 3, ".png");
-	picture_ptr->save("/home/robot/pictureTest.png");
+	picture_ptr->save("./localization_picture.png");
 	std::cout<<"after CAPTURE"<<std::endl;
 	std::vector<std::vector<float>> robotToCameraMatrix = rapp_navigation.get_transform("rgb_head_1",0);
 
@@ -201,7 +201,7 @@ bool handleGlobalLocalization(std::string qr_map_file_path){
 	// global localization with Nao head motion
 	std::cout<<"setting head start position"<< std::endl;
 	new_joint_angle.clear();
-	new_joint_angle.push_back((-119*(3.1415/180)));
+	new_joint_angle.push_back((-120*(3.1415/180)));
 	while ((localization_status != 0 || camera_joint_range)){
 		if(!mute)
 		rapp_communication.text_to_speech("Calling global localization");
@@ -219,21 +219,24 @@ bool handleGlobalLocalization(std::string qr_map_file_path){
 		}else if (localization_status==0){
 			std::cout<<"localization successful"<<std::endl;
 		} else if(localization_status == 2){
-			bool moveJoint_status = rapp_navigation.move_joint(move_joints_names, new_joint_angle, 0.5);
-			sleep(4);
-			if (moveJoint_status)
-				localization_status = 1;
-
 			new_joint_angle.at(0) = new_joint_angle.at(0)+float(30*(3.14/180));
-			std::cout<<"New head position request: "<<new_joint_angle.at(0) <<std::endl;
 
-			if (new_joint_angle.at(0)>119*(3.1415/180)){
+			if (new_joint_angle.at(0)>90*(3.1415/180)){
 				camera_joint_range = true;
 				if(!mute)
 				rapp_communication.text_to_speech("I can't rotate my head further, give me QRcodes!");
 				std::cout<<"Robot head checked whole camera spectrum, Hazard detection ends"<< std::endl;
 				return 1;	
 			}
+
+			bool moveJoint_status = rapp_navigation.move_joint(move_joints_names, new_joint_angle, 0.5);
+			sleep(4);
+			if (moveJoint_status)
+				localization_status = 1;
+
+			std::cout<<"New head position request: "<<new_joint_angle.at(0) <<std::endl;
+
+			
 		}
 
 	}
