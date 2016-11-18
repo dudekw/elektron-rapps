@@ -215,7 +215,7 @@ bool handleGlobalLocalization(std::string qr_map_file_path){
 			rapp_communication.text_to_speech("Application FAILED because of core agent crash");
 
 			std::cout<<"RApp FAILED because of core agent crash"<< std::endl;
-			return 1;	
+			return false;	
 		}else if (localization_status==0){
 			std::cout<<"localization successful"<<std::endl;
 		} else if(localization_status == 2){
@@ -226,7 +226,7 @@ bool handleGlobalLocalization(std::string qr_map_file_path){
 				if(!mute)
 				rapp_communication.text_to_speech("I can't rotate my head further, give me QRcodes!");
 				std::cout<<"Robot head checked whole camera spectrum, Hazard detection ends"<< std::endl;
-				return 1;	
+				return false;	
 			}
 
 			bool moveJoint_status = rapp_navigation.move_joint(move_joints_names, new_joint_angle, 0.5);
@@ -235,11 +235,11 @@ bool handleGlobalLocalization(std::string qr_map_file_path){
 				localization_status = 1;
 
 			std::cout<<"New head position request: "<<new_joint_angle.at(0) <<std::endl;
-
 			
 		}
 
 	}
+return true;
 
 
 }
@@ -374,7 +374,7 @@ int main (int argc, char ** argv ) {
 
         // hazard-lamp pose
         goal_pose_rapp_lamp.position.x = 5.5;//goal_pose_input.at(0);
-        goal_pose_rapp_lamp.position.y = 2;//goal_pose_input.at(1);
+        goal_pose_rapp_lamp.position.y = 1.8;//goal_pose_input.at(1);
         goal_pose_rapp_lamp.position.z = 0;//goal_pose_input.at(2);
         goal_pose_rapp_lamp.orientation.x = 0;//goal_pose_input.at(3);
         goal_pose_rapp_lamp.orientation.y = 0;//goal_pose_input.at(4);
@@ -387,7 +387,7 @@ int main (int argc, char ** argv ) {
 //	float hazard_point_z = goal_pose_input.at(9);
 
 	float door_point_x = 6;
-	float door_point_y = 1.7;
+	float door_point_y = 1.25;
 	float door_point_z = 0;
 
 
@@ -409,8 +409,9 @@ int main (int argc, char ** argv ) {
 
 	// 1. Global localization
 
-	handleGlobalLocalization(qr_map_file_path);
- 	// get robot position
+	bool localization_status = handleGlobalLocalization(qr_map_file_path);
+ 	if (localization_status){
+	// get robot position
         rapp::object::pose_stamped current_pose = rapp_navigation.get_global_pose();
         // ----
 
@@ -442,5 +443,11 @@ int main (int argc, char ** argv ) {
 	//
 	//rapp_navigation.rest("Crouch");
 	return 0;
+
+	}else{
+
+	    if(!mute)
+            rapp_communication.text_to_speech("Cant localize in the environment, my job is done.");
+	}
 }
 
