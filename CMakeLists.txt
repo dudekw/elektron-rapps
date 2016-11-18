@@ -19,7 +19,12 @@ create_rapp(
     LIBS ${PTHREAD} ${Boost_LIBRARIES}
  #   [FILES file1, file2, ...]
 )
-
+create_rapp(
+    NAME vis_loc
+    SRCS src/vis_loc.cpp
+    LIBS ${PTHREAD} ${Boost_LIBRARIES}
+ #   [FILES file1, file2, ...]
+)
 # install(TARGETS elektron_nav_test
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
