@@ -459,7 +459,9 @@ bool lookForObject(rapp::cloud::service_controller &ctrl, std::string token, std
     float fy = cam.K[4];
 	for(unsigned int i = 0; i < head_angles.size(); i++){
         rapp_navigation.move_joint(joint_names, {head_angles.at(i)*(float) 3.14/180, 0.5f});
-		picture_ptr = rapp_vision.capture_image(0,3,".jpg");
+		sleep(3);
+		picture_ptr = rapp_vision.capture_image(0,3,".png");
+		picture_ptr->save("./find_object_pic.png");
 		ctrl.make_call<rapp::cloud::object_detection_find_objects>(picture_ptr, 10, [&](std::vector<std::string> names, std::vector<rapp::object::point> centers, std::vector<float> scores, int result) {
 			for (unsigned int i = 0; i < names.size(); i++){
 				std::cout<<"found object: "<< names.at(i)<<std::endl;
@@ -643,7 +645,8 @@ rapp::cloud::service_controller ctrl(info);
 rapp_navigation.take_predefined_posture("Zero", 0.5);
 rapp_communication.text_to_speech("Hello I am Nao. What should I look for?");
 std::vector<std::string> word_dictionary = {"mint"};
-std::string spotted_word = rapp_communication.word_spotting(word_dictionary);
+//std::string spotted_word = rapp_communication.word_spotting(word_dictionary);
+std::string spotted_word = "mint";
 rapp_communication.text_to_speech("I will look for "+spotted_word);
 
 // [3] - read middle poses from file
