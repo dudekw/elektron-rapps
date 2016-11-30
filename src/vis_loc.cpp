@@ -120,7 +120,9 @@ rapp::object::pose handle_localization_position(rapp::cloud::service_controller 
 }
 bool calculare_robot_pose(rapp::object::pose &camera_estimated_pose,rapp::object::pose &end_pose){
 	rapp::object::pose camera_in_robot_pose;
-	rapp_localization.pose_from_matrix(rapp_navigation.get_transform("rgb_head_1", 0), camera_in_robot_pose);
+	std::vector<std::vector<float>> camera_to_robot_matrix = rapp_navigation.get_transform("CameraTop", 0);
+
+	rapp_localization.pose_from_matrix(camera_to_robot_matrix, camera_in_robot_pose);
 	rapp_localization.multiply_poses(camera_estimated_pose, camera_in_robot_pose, end_pose);
 	return true;
 }
