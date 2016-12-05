@@ -255,7 +255,7 @@ bool handleGlobalLocalization_rgb_cam(rapp::cloud::service_controller &ctrl, int
 
 	current_pose = rapp_navigation.get_global_pose();
 
-	rapp_navigation.take_predefined_posture("Zero");
+	rapp_navigation.take_predefined_posture("Zero", 0.5);
 	std::vector<rapp::object::picture::Ptr> picture_vector;
 	std::vector<float> head_angles;
 	head_angles.clear();
@@ -446,7 +446,7 @@ bool handleGlobalLocalization_qr_code(std::string qr_map_file_path){
 	move_joints_names.clear();
 	move_joints_names.push_back("head_yaw");
 	std::vector<float> new_joint_angle;
-	rapp_navigation.take_predefined_posture("Zero");
+	rapp_navigation.take_predefined_posture("Zero", 0.5);
 	// global localization with Nao head motion
 	std::cout<<"setting head start position"<< std::endl;
 	new_joint_angle.clear();
@@ -699,7 +699,7 @@ int main (int argc, char ** argv ) {
 	// 4. move to lamp check
 	plannAndMove(ctrl, token, pose_for_lamp, current_pose, obstacle_map_path, obstacle_map_name);
 	
-	rapp_navigation.take_predefined_posture("Zero";
+	rapp_navigation.take_predefined_posture("Zero", 0.5);
 	// 5. check the lamp status
 	handleHazard(ctrl,token, point_for_lamp, 2);
 
