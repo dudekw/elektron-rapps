@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<hazards>
+	<hazard>
+		<type>door</type>
+		<ID>1</ID>
+		<pose>
+			<position>
+				<x>3.014</x>
+				<y>0.8</y>
+				<z>0</z>
+			</position>
+
+			<orientation>
+				<x>0</x>
+				<y>0</y>
+				<z>-0.7</z>
+				<w>0.7</w>
+			</orientation>
+		</pose>
+		<point>
+			<x>2.486</x>
+			<y>-0.243</y>
+			<z>0</z>		
+		</point>
+	</hazard>
+	<hazard>
+		<ID>2</ID>
+		<type>lamp</type>
+		<pose>
+			<position>
+				<x>3.53</x>
+				<y>1</y>
+				<z>0</z>
+			</position>
+
+			<orientation>
+				<x>0</x>
+				<y>0</y>
+				<z>0</z>
+				<w>1</w>
+			</orientation>
+		</pose>
+		<point>
+			<x>5.95</x>
+			<y>1</y>
+			<z>2.6</z>		
+		</point>
+	</hazard>
+</hazards>
