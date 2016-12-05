@@ -643,7 +643,8 @@ rapp::cloud::platform_info info = {"192.168.18.186", "9001", token};
 rapp::cloud::service_controller ctrl(info);
 // [2] - get user request
 rapp_navigation.take_predefined_posture("Zero", 0.5);
-rapp_communication.text_to_speech("Hello I am Nao. What should I look for?");
+rapp_communication.text_to_speech("Hello I am Electron. What should I look for?");
+sleep(3);
 std::vector<std::string> word_dictionary = {"mint"};
 //std::string spotted_word = rapp_communication.word_spotting(word_dictionary);
 std::string spotted_word = "mint";
