@@ -672,23 +672,24 @@ int main (int argc, char ** argv ) {
 	plannAndMove(ctrl, token, pose_for_door, current_pose, obstacle_map_path, obstacle_map_name);
 
 	// 1. Global localization
-    if (use_QR_MAP){
-		localization_status = handleGlobalLocalization_qr_code(QR_map_file_path);
-    }else{
-		localization_status = handleGlobalLocalization_rgb_cam(ctrl,id);
-    }
+	// int id = -1;
+ //    if (use_QR_MAP){
+	// 	localization_status = handleGlobalLocalization_qr_code(QR_map_file_path);
+ //    }else{
+	// 	localization_status = handleGlobalLocalization_rgb_cam(ctrl,id);
+ //    }
  	if (localization_status){
 
-	rapp::object::pose global_pose;
-	global_pose.position.x = 1;
-	global_pose.position.y = 1;
-	global_pose.position.z = 0;
-	global_pose.orientation.x = 0;
-	global_pose.orientation.y = 0;
-	global_pose.orientation.z = 0;
-	global_pose.orientation.w = 1;
-	rapp_navigation.set_global_pose(global_pose);
-	sleep(4);
+	// rapp::object::pose global_pose;
+	// global_pose.position.x = 1;
+	// global_pose.position.y = 1;
+	// global_pose.position.z = 0;
+	// global_pose.orientation.x = 0;
+	// global_pose.orientation.y = 0;
+	// global_pose.orientation.z = 0;
+	// global_pose.orientation.w = 1;
+	//rapp_navigation.set_global_pose(global_pose);
+	// sleep(4);
 	// 3. check the door status
 	handleHazard(ctrl,token, point_for_door, 1);
 
@@ -709,7 +710,7 @@ int main (int argc, char ** argv ) {
 		rapp_communication.text_to_speech("My job is done.");
 	//  
 	//
-	rapp_navigation.rest("Crouch");
+	//rapp_navigation.rest("Crouch");
 	return 0;
 
         }else{
