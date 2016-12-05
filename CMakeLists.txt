@@ -14,8 +14,8 @@ find_library(PTHREAD NAMES libpthread.so.0 )
 setup_rapp()
 
 create_rapp(
-    NAME obstacle_search
-    SRCS src/obstacle_search.cpp
+    NAME object_search
+    SRCS src/object_search.cpp
     LIBS ${PTHREAD} ${Boost_LIBRARIES}
  #   [FILES file1, file2, ...]
 )
